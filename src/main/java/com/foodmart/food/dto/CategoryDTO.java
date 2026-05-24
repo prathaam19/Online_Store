@@ -1,7 +1,11 @@
 package com.foodmart.food.dto;
 
+import jakarta.validation.constraints.NotBlank;
+
 public class CategoryDTO {
     private Long id;
+
+    @NotBlank(message = "Category name is required")
     private String name;
 
     public CategoryDTO() {

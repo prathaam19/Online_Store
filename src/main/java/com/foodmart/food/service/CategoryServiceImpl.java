@@ -5,11 +5,16 @@ import com.foodmart.food.entity.Category;
 import com.foodmart.food.mapper.CategoryMapper;
 import com.foodmart.food.repository.CategoryRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 @Service
 public class CategoryServiceImpl implements CategoryService {
+    private static final Logger logger = LoggerFactory.getLogger(CategoryServiceImpl.class);
+    
     private final CategoryRepository categoryRepository;
     private final CategoryMapper categoryMapper;
 
@@ -19,13 +24,19 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    @Transactional
     public Category addCategory(CategoryDTO categoryDTO) {
+        logger.info("Adding new category: {}", categoryDTO.getName());
         Category category = categoryMapper.toEntity(categoryDTO);
-        return categoryRepository.save(category);
+        Category saved = categoryRepository.save(category);
+        logger.info("Category added successfully with ID: {}", saved.getId());
+        return saved;
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Category> getAllCategories() {
+        logger.info("Fetching all categories");
         return categoryRepository.findAll();
     }
 }

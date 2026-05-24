@@ -5,16 +5,21 @@ import com.foodmart.food.dto.ProductResponse;
 import com.foodmart.food.entity.Cart;
 import com.foodmart.food.entity.Product;
 import com.foodmart.food.entity.User;
+import com.foodmart.food.exception.ResourceNotFoundException;
 import com.foodmart.food.repository.CartRepository;
 import com.foodmart.food.repository.ProductRepository;
 import com.foodmart.food.repository.UserRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 public class CartServiceImpl implements CartService {
+    private static final Logger logger = LoggerFactory.getLogger(CartServiceImpl.class);
 
     private final CartRepository cartRepository;
     private final UserRepository userRepository;
@@ -27,32 +32,40 @@ public class CartServiceImpl implements CartService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public CartResponse getCart(String username) {
+        logger.info("Fetching cart for user: {}", username);
         Cart cart = findOrCreateCart(username);
         return toResponse(cart);
     }
 
     @Override
+    @Transactional
     public CartResponse addProductToCart(String username, Long productId) {
+        logger.info("Adding product {} to cart for user: {}", productId, username);
         Cart cart = findOrCreateCart(username);
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new RuntimeException("Product not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID: " + productId));
         cart.getProducts().add(product);
         cartRepository.save(cart);
+        logger.info("Product added to cart successfully");
         return toResponse(cart);
     }
 
     @Override
+    @Transactional
     public CartResponse removeProductFromCart(String username, Long productId) {
+        logger.info("Removing product {} from cart for user: {}", productId, username);
         Cart cart = findOrCreateCart(username);
         cart.getProducts().removeIf(product -> product.getId().equals(productId));
         cartRepository.save(cart);
+        logger.info("Product removed from cart successfully");
         return toResponse(cart);
     }
 
     private Cart findOrCreateCart(String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with username: " + username));
         return cartRepository.findByUserUsername(username)
                 .orElseGet(() -> {
                     Cart cart = new Cart();

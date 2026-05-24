@@ -1,17 +1,30 @@
 package com.foodmart.food.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
 public class ProductDTO {
+    @NotBlank(message = "Product name is required")
     private String name;
+
     @NotNull(message = "Price is required")
     @Positive(message = "Price must be positive")
     private Double price;
-    private Integer quantity;
-    private Long categoryId;
-    public ProductDTO() {
 
+    @NotNull(message = "Quantity is required")
+    @Positive(message = "Quantity must be positive")
+    private Integer quantity;
+
+    private Long categoryId;
+
+    public ProductDTO() {
+    }
+
+    public ProductDTO(String name, Double price, Integer quantity) {
+        this.name = name;
+        this.price = price;
+        this.quantity = quantity;
     }
 
     public Long getCategoryId() {
@@ -24,12 +37,6 @@ public class ProductDTO {
 
     public String getName() {
         return name;
-    }
-
-    public ProductDTO(String name, Double price, Integer quantity) {
-        this.name = name;
-        this.price = price;
-        this.quantity = quantity;
     }
 
     public void setName(String name) {
