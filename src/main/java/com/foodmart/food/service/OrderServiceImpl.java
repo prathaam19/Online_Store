@@ -5,6 +5,7 @@ import com.foodmart.food.dto.OrderItemDTO;
 import com.foodmart.food.dto.OrderRequest;
 import com.foodmart.food.dto.OrderResponse;
 import com.foodmart.food.dto.ProductResponse;
+import com.foodmart.food.service.EmailService;
 import com.foodmart.food.entity.Address;
 import com.foodmart.food.entity.Order;
 import com.foodmart.food.entity.OrderItem;
@@ -16,6 +17,7 @@ import com.foodmart.food.repository.CartRepository;
 import com.foodmart.food.repository.OrderRepository;
 import com.foodmart.food.repository.ProductRepository;
 import com.foodmart.food.repository.UserRepository;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
@@ -33,13 +35,15 @@ public class OrderServiceImpl implements OrderService {
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
     private final CartRepository cartRepository;
+    private final EmailService emailService;
 
     public OrderServiceImpl(OrderRepository orderRepository, UserRepository userRepository, ProductRepository productRepository,
-                          CartRepository cartRepository) {
+                          CartRepository cartRepository, ObjectProvider<EmailService> emailServiceProvider) {
         this.orderRepository = orderRepository;
         this.userRepository = userRepository;
         this.productRepository = productRepository;
         this.cartRepository = cartRepository;
+        this.emailService = emailServiceProvider.getIfAvailable();
     }
 
     @Override
@@ -78,6 +82,10 @@ public class OrderServiceImpl implements OrderService {
         // Clear user's cart after successful order placement
         user.getCart().getProducts().clear();
         cartRepository.save(user.getCart());
+
+        if (emailService != null) {
+            emailService.sendOrderConfirmationEmail(user.getEmail(), user.getUsername(), saved.getId(), saved.getTotal().toString());
+        }
         
         logger.info("Order placed successfully with ID: {}", saved.getId());
         return toResponse(saved);

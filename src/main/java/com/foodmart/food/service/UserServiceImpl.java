@@ -7,6 +7,7 @@ import com.foodmart.food.entity.User;
 import com.foodmart.food.repository.RoleRepository;
 import com.foodmart.food.repository.UserRepository;
 import com.foodmart.food.util.JwtUtil;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,13 +24,19 @@ public class UserServiceImpl implements UserService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final String sellerInviteCode;
+    private final String adminInviteCode;
 
     public UserServiceImpl(UserRepository userRepository, RoleRepository roleRepository,
-                           PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
+                           PasswordEncoder passwordEncoder, JwtUtil jwtUtil,
+                           @Value("${app.seller.invite-code:SELLER_SECRET}") String sellerInviteCode,
+                           @Value("${app.admin.invite-code:ADMIN_SECRET}") String adminInviteCode) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
+        this.sellerInviteCode = sellerInviteCode;
+        this.adminInviteCode = adminInviteCode;
     }
 
     @Override
@@ -51,10 +58,28 @@ public class UserServiceImpl implements UserService {
         u.setEmail(request.getEmail());
         u.setPassword(passwordEncoder.encode(request.getPassword()));
 
-        Role role = roleRepository.findByName("ROLE_CUSTOMER").orElseGet(() -> {
-            Role r = new Role("ROLE_CUSTOMER");
-            return roleRepository.save(r);
-        });
+        String roleRequested = request.getRole() == null ? "CUSTOMER" : request.getRole().trim().toUpperCase();
+        if (roleRequested.startsWith("ROLE_")) {
+            roleRequested = roleRequested.substring(5);
+        }
+
+        String roleName = "ROLE_CUSTOMER";
+        if ("SELLER".equals(roleRequested)) {
+            if (request.getInviteCode() == null || !request.getInviteCode().equals(sellerInviteCode)) {
+                logger.warn("Invalid seller invite code for username: {}", request.getUsername());
+                throw new RuntimeException("Invalid invite code for seller registration");
+            }
+            roleName = "ROLE_SELLER";
+        } else if ("ADMIN".equals(roleRequested)) {
+            if (request.getInviteCode() == null || !request.getInviteCode().equals(adminInviteCode)) {
+                logger.warn("Invalid admin invite code for username: {}", request.getUsername());
+                throw new RuntimeException("Invalid invite code for admin registration");
+            }
+            roleName = "ROLE_ADMIN";
+        }
+
+        final String selectedRoleName = roleName;
+        Role role = roleRepository.findByName(selectedRoleName).orElseGet(() -> roleRepository.save(new Role(selectedRoleName)));
 
         u.setRoles(new HashSet<>());
         u.getRoles().add(role);
@@ -62,7 +87,7 @@ public class UserServiceImpl implements UserService {
         userRepository.save(u);
         
         String token = jwtUtil.generateToken(u.getUsername());
-        logger.info("User registered successfully: {}", request.getUsername());
+        logger.info("User registered successfully: {} with role {}", request.getUsername(), roleName);
         return new AuthResponse(token);
     }
 }

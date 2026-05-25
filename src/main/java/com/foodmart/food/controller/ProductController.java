@@ -12,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 
 import java.util.List;
@@ -26,6 +27,7 @@ public class ProductController {
         this.productService = productService;
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','SELLER')")
     @PostMapping("/add")
     public Product addProduct(@Valid @RequestBody ProductDTO productDTO){
         return productService.addProduct(productDTO);
@@ -53,17 +55,20 @@ public class ProductController {
         return productService.searchByName(q);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','SELLER')")
     @PostMapping(path = "/{id}/image", consumes = {"multipart/form-data"})
     public ResponseEntity<?> uploadImage(@PathVariable Long id, @RequestParam("file") MultipartFile file) throws IOException {
         var resp = productService.addImageToProduct(id, file);
         return ResponseEntity.ok(resp);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','SELLER')")
     @PutMapping("/{id}")
     public Product updateProduct(@PathVariable Long id, @RequestBody ProductDTO productDTO){
         return productService.updateProduct(id, productDTO);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','SELLER')")
     @DeleteMapping("/{id}")
     public String DeleteProduct(@PathVariable Long id ){
         productService.deleteProduct(id);

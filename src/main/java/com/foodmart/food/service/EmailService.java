@@ -1,6 +1,7 @@
 package com.foodmart.food.service;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -10,8 +11,10 @@ import org.slf4j.LoggerFactory;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import java.io.UnsupportedEncodingException;
 
 @Service
+@ConditionalOnProperty(prefix = "spring.mail", name = "host")
 public class EmailService {
     private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
 
@@ -44,7 +47,7 @@ public class EmailService {
 
             mailSender.send(message);
             logger.info("Order confirmation email sent to: {}", toEmail);
-        } catch (MessagingException e) {
+        } catch (MessagingException | UnsupportedEncodingException e) {
             logger.error("Failed to send order confirmation email to: {}", toEmail, e);
         }
     }
@@ -66,7 +69,7 @@ public class EmailService {
 
             mailSender.send(message);
             logger.info("Payment success email sent to: {}", toEmail);
-        } catch (MessagingException e) {
+        } catch (MessagingException | UnsupportedEncodingException e) {
             logger.error("Failed to send payment success email to: {}", toEmail, e);
         }
     }
@@ -88,7 +91,7 @@ public class EmailService {
 
             mailSender.send(message);
             logger.info("Payment failed email sent to: {}", toEmail);
-        } catch (MessagingException e) {
+        } catch (MessagingException | UnsupportedEncodingException e) {
             logger.error("Failed to send payment failed email to: {}", toEmail, e);
         }
     }
@@ -110,7 +113,7 @@ public class EmailService {
 
             mailSender.send(message);
             logger.info("Order delivered email sent to: {}", toEmail);
-        } catch (MessagingException e) {
+        } catch (MessagingException | UnsupportedEncodingException e) {
             logger.error("Failed to send order delivered email to: {}", toEmail, e);
         }
     }
