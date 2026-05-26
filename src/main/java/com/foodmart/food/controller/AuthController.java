@@ -2,6 +2,7 @@ package com.foodmart.food.controller;
 
 import com.foodmart.food.dto.AuthRequest;
 import com.foodmart.food.dto.AuthResponse;
+import com.foodmart.food.dto.GoogleAuthRequest;
 import com.foodmart.food.dto.RegisterRequest;
 import com.foodmart.food.entity.User;
 import com.foodmart.food.repository.UserRepository;
@@ -44,5 +45,24 @@ public class AuthController {
         }
         String token = jwtUtil.generateToken(user.getUsername());
         return ResponseEntity.ok(new AuthResponse(token));
+    }
+
+    @PostMapping("/google")
+    public ResponseEntity<AuthResponse> googleAuth(@RequestBody GoogleAuthRequest request) {
+        // TODO: Implement Google OAuth verification
+        // This endpoint should:
+        // 1. Verify the Google token with Google's API
+        // 2. Extract user information (email, name, etc.)
+        // 3. Create or find the user in the database
+        // 4. Return a JWT token
+        
+        // For now, return a placeholder response
+        // You need to:
+        // 1. Add Google OAuth Client ID and Secret to application.properties
+        // 2. Add Google OAuth dependencies to pom.xml
+        // 3. Implement token verification with Google's API
+        // 4. Create or update user based on Google profile
+        
+        throw new RuntimeException("Google authentication not yet implemented. Please configure Google OAuth credentials.");
     }
 }
