@@ -40,7 +40,8 @@ class CartServiceIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        Role role = roleRepository.save(new Role("ROLE_CUSTOMER"));
+        Role role = roleRepository.findByName("ROLE_CUSTOMER")
+                .orElseGet(() -> roleRepository.save(new Role("ROLE_CUSTOMER")));
         user = new User();
         user.setUsername("testuser");
         user.setEmail("test@example.com");

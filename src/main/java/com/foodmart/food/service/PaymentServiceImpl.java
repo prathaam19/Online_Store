@@ -17,7 +17,7 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Mac;
@@ -43,12 +43,30 @@ public class PaymentServiceImpl implements PaymentService {
                               OrderRepository orderRepository,
                               UserRepository userRepository,
                               ObjectProvider<EmailService> emailServiceProvider,
-                              @Value("${razorpay.key-id}") String razorpayKeyId,
-                              @Value("${razorpay.key-secret}") String razorpayKeySecret) throws RazorpayException {
+                              Environment environment) throws RazorpayException {
         this.paymentRepository = paymentRepository;
         this.orderRepository = orderRepository;
         this.userRepository = userRepository;
         this.emailService = emailServiceProvider.getIfAvailable();
+
+        String razorpayKeyId = environment.getProperty("razorpay.key-id");
+        if (razorpayKeyId == null) {
+            razorpayKeyId = environment.getProperty("razorpay.api.key");
+        }
+
+        String razorpayKeySecret = environment.getProperty("razorpay.key-secret");
+        if (razorpayKeySecret == null) {
+            razorpayKeySecret = environment.getProperty("razorpay.api.secret");
+        }
+
+        // Demo fallback credentials when explicit configuration is missing
+        if (razorpayKeyId == null || razorpayKeyId.isBlank()) {
+            razorpayKeyId = "rzp_test_BLtQ4MAIVBksGL";
+        }
+        if (razorpayKeySecret == null || razorpayKeySecret.isBlank()) {
+            razorpayKeySecret = "OsuNHnliz3IYLbOteAJVOzrq";
+        }
+
         this.razorpayKeySecret = razorpayKeySecret;
         this.razorpayClient = new RazorpayClient(razorpayKeyId, razorpayKeySecret);
     }
@@ -73,8 +91,8 @@ public class PaymentServiceImpl implements PaymentService {
         orderRequest.put("payment_capture", 1);
 
         try {
-            JSONObject razorpayOrder = razorpayClient.orders.create(orderRequest);
-            String razorpayOrderId = razorpayOrder.getString("id");
+            com.razorpay.Order razorpayOrder = razorpayClient.orders.create(orderRequest);
+            String razorpayOrderId = razorpayOrder.get("id").toString();
 
             Payment payment = new Payment();
             payment.setOrder(order);
