@@ -1,0 +1,37 @@
+# Backend
+food/target/
+food/.mvn/
+food/mvnw
+food/mvnw.cmd
+food/uploads/*
+!food/uploads/.gitkeep
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+
+# Git
+.git/
+.gitignore
+.gitmodules
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation
+README.md
+*.md
+
+# Environment
+.env
+.env.local
+.env.*.local
