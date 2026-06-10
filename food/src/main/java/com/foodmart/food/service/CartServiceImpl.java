@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -44,8 +45,9 @@ public class CartServiceImpl implements CartService {
     public CartResponse addProductToCart(String username, Long productId) {
         logger.info("Adding product {} to cart for user: {}", productId, username);
         Cart cart = findOrCreateCart(username);
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID: " + productId));
+        Long safeProductId = Objects.requireNonNull(productId, "Product id is required");
+        Product product = productRepository.findById(safeProductId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID: " + safeProductId));
         cart.getProducts().add(product);
         cartRepository.save(cart);
         logger.info("Product added to cart successfully");

@@ -2,7 +2,6 @@ package com.foodmart.food.service;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -12,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import java.io.UnsupportedEncodingException;
+import java.util.Objects;
 
 @Service
 @ConditionalOnProperty(prefix = "spring.mail", name = "host")
@@ -38,11 +38,12 @@ public class EmailService {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            helper.setFrom(mailFrom, mailFromName);
-            helper.setTo(toEmail);
+            applyMailFrom(helper);
+            String recipient = Objects.requireNonNull(toEmail, "Email recipient must be provided");
+            helper.setTo(recipient);
             helper.setSubject("Order Confirmation - FoodMart");
 
-            String htmlContent = buildOrderConfirmationEmail(username, orderId, orderAmount);
+            String htmlContent = Objects.requireNonNull(buildOrderConfirmationEmail(username, orderId, orderAmount), "Email content must not be null");
             helper.setText(htmlContent, true);
 
             mailSender.send(message);
@@ -60,11 +61,12 @@ public class EmailService {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            helper.setFrom(mailFrom, mailFromName);
-            helper.setTo(toEmail);
+            applyMailFrom(helper);
+            String recipient = Objects.requireNonNull(toEmail, "Email recipient must be provided");
+            helper.setTo(recipient);
             helper.setSubject("Payment Successful - Order #" + orderId);
 
-            String htmlContent = buildPaymentSuccessEmail(username, orderId, amount, transactionId);
+            String htmlContent = Objects.requireNonNull(buildPaymentSuccessEmail(username, orderId, amount, transactionId), "Email content must not be null");
             helper.setText(htmlContent, true);
 
             mailSender.send(message);
@@ -82,11 +84,12 @@ public class EmailService {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            helper.setFrom(mailFrom, mailFromName);
-            helper.setTo(toEmail);
+            applyMailFrom(helper);
+            String recipient = Objects.requireNonNull(toEmail, "Email recipient must be provided");
+            helper.setTo(recipient);
             helper.setSubject("Payment Failed - Order #" + orderId);
 
-            String htmlContent = buildPaymentFailedEmail(username, orderId, reason);
+            String htmlContent = Objects.requireNonNull(buildPaymentFailedEmail(username, orderId, reason), "Email content must not be null");
             helper.setText(htmlContent, true);
 
             mailSender.send(message);
@@ -104,11 +107,12 @@ public class EmailService {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            helper.setFrom(mailFrom, mailFromName);
-            helper.setTo(toEmail);
+            applyMailFrom(helper);
+            String recipient = Objects.requireNonNull(toEmail, "Email recipient must be provided");
+            helper.setTo(recipient);
             helper.setSubject("Your Order Has Been Delivered - FoodMart");
 
-            String htmlContent = buildOrderDeliveredEmail(username, orderId);
+            String htmlContent = Objects.requireNonNull(buildOrderDeliveredEmail(username, orderId), "Email content must not be null");
             helper.setText(htmlContent, true);
 
             mailSender.send(message);
@@ -116,6 +120,13 @@ public class EmailService {
         } catch (MessagingException | UnsupportedEncodingException e) {
             logger.error("Failed to send order delivered email to: {}", toEmail, e);
         }
+    }
+
+    private void applyMailFrom(MimeMessageHelper helper) throws MessagingException, UnsupportedEncodingException {
+        helper.setFrom(
+                Objects.requireNonNull(mailFrom, "Mail from address must be configured"),
+                Objects.requireNonNull(mailFromName, "Mail from name must be configured")
+        );
     }
 
     // ===== Email Template Builders =====

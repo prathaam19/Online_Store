@@ -19,4 +19,5 @@ public interface ProductService {
     Page<ProductResponse> getProductsPaged(Pageable pageable);
     List<ProductResponse> searchByName(String q);
     ProductResponse addImageToProduct(Long productId, org.springframework.web.multipart.MultipartFile file) throws java.io.IOException;
+    ProductResponse getProductById(Long id);
 }

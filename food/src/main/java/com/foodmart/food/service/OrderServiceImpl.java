@@ -4,8 +4,6 @@ import com.foodmart.food.dto.AddressDTO;
 import com.foodmart.food.dto.OrderItemDTO;
 import com.foodmart.food.dto.OrderRequest;
 import com.foodmart.food.dto.OrderResponse;
-import com.foodmart.food.dto.ProductResponse;
-import com.foodmart.food.service.EmailService;
 import com.foodmart.food.entity.Address;
 import com.foodmart.food.entity.Order;
 import com.foodmart.food.entity.OrderItem;
@@ -25,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -68,8 +67,9 @@ public class OrderServiceImpl implements OrderService {
         order.setShippingAddress(address);
 
         for (OrderItemDTO itemDTO : request.getItems()) {
-            Product product = productRepository.findById(itemDTO.getProductId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID: " + itemDTO.getProductId()));
+            Long productId = Objects.requireNonNull(itemDTO.getProductId(), "Product id is required");
+            Product product = productRepository.findById(productId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID: " + productId));
             OrderItem item = new OrderItem();
             item.setProduct(product);
             item.setQuantity(itemDTO.getQuantity());
@@ -80,8 +80,11 @@ public class OrderServiceImpl implements OrderService {
         Order saved = orderRepository.save(order);
         
         // Clear user's cart after successful order placement
-        user.getCart().getProducts().clear();
-        cartRepository.save(user.getCart());
+        var cart = user.getCart();
+        if (cart != null) {
+            cart.getProducts().clear();
+            cartRepository.save(cart);
+        }
 
         if (emailService != null) {
             emailService.sendOrderConfirmationEmail(user.getEmail(), user.getUsername(), saved.getId(), saved.getTotal().toString());

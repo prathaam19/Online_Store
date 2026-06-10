@@ -11,6 +11,8 @@ import com.foodmart.food.service.CartService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.Objects;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,7 +57,9 @@ class CartServiceIntegrationTest {
         product.setName("Test Product");
         product.setPrice(10.0);
         product.setQuantity(5);
-        productRepository.save(product);
+        Objects.requireNonNull(product, "Product entity must not be null");
+        Product savedProduct = Objects.requireNonNull(productRepository.save(product), "Saved product must not be null");
+        product = savedProduct;
     }
 
     @Test

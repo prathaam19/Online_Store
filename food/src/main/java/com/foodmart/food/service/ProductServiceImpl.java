@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class ProductServiceImpl implements ProductService {
@@ -35,11 +36,12 @@ public class ProductServiceImpl implements ProductService {
     @Transactional
     public Product addProduct(ProductDTO productDTO) {
         logger.info("Adding new product: {}", productDTO.getName());
-        Product product = productMapper.toEntity(productDTO);
+        Product product = Objects.requireNonNull(productMapper.toEntity(productDTO), "Product mapping produced null");
 
-        if (productDTO.getCategoryId() != null) {
-            var cat = categoryRepository.findById(productDTO.getCategoryId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Category not found with ID: " + productDTO.getCategoryId()));
+        Long categoryId = productDTO.getCategoryId();
+        if (categoryId != null) {
+            var cat = categoryRepository.findById(categoryId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Category not found with ID: " + categoryId));
             product.setCategory(cat);
         }
 
@@ -69,7 +71,7 @@ public class ProductServiceImpl implements ProductService {
     public Page<ProductResponse> getProductsPaged(Pageable pageable) {
         logger.info("Fetching products with pagination: page={}, size={}", pageable.getPageNumber(), pageable.getPageSize());
         var page = productRepository.findAll(pageable);
-        List<ProductResponse> mapped = page.getContent().stream().map(productMapper::toResponse).toList();
+        List<ProductResponse> mapped = Objects.requireNonNull(page.getContent().stream().map(productMapper::toResponse).toList(), "Mapped product list must not be null");
         return new PageImpl<>(mapped, pageable, page.getTotalElements());
     }
 
@@ -84,20 +86,22 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional
     public Product updateProduct(Long id, ProductDTO productDTO) {
-        logger.info("Updating product ID: {}", id);
-        Product existingProduct = productRepository
-                .findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID: " + id));
+        Long productId = Objects.requireNonNull(id, "Product id is required");
+        logger.info("Updating product ID: {}", productId);
+        Product existingProduct = Objects.requireNonNull(productRepository
+                .findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID: " + productId)), "Existing product must not be null");
 
         productMapper.updateEntity(productDTO, existingProduct);
 
-        if (productDTO.getCategoryId() != null) {
-            var cat = categoryRepository.findById(productDTO.getCategoryId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Category not found with ID: " + productDTO.getCategoryId()));
+        Long categoryId = productDTO.getCategoryId();
+        if (categoryId != null) {
+            var cat = categoryRepository.findById(categoryId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Category not found with ID: " + categoryId));
             existingProduct.setCategory(cat);
         }
 
-        Product updated = productRepository.save(existingProduct);
+        Product updated = Objects.requireNonNull(productRepository.save(existingProduct), "Updated product must not be null");
         logger.info("Product updated successfully");
         return updated;
     }
@@ -105,10 +109,11 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional
     public Product deleteProduct(Long id) {
-        logger.info("Deleting product ID: {}", id);
-        Product product = productRepository
-                .findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID: " + id));
+        Long productId = Objects.requireNonNull(id, "Product id is required");
+        logger.info("Deleting product ID: {}", productId);
+        Product product = Objects.requireNonNull(productRepository
+                .findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID: " + productId)), "Product to delete must not be null");
 
         productRepository.delete(product);
         logger.info("Product deleted successfully");
@@ -118,9 +123,10 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional
     public ProductResponse addImageToProduct(Long productId, org.springframework.web.multipart.MultipartFile file) throws java.io.IOException {
-        logger.info("Uploading image for product ID: {}", productId);
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID: " + productId));
+        Long safeProductId = Objects.requireNonNull(productId, "Product id is required");
+        logger.info("Uploading image for product ID: {}", safeProductId);
+        Product product = Objects.requireNonNull(productRepository.findById(safeProductId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID: " + safeProductId)), "Product must not be null");
         
         java.nio.file.Path uploads = java.nio.file.Paths.get("uploads").toAbsolutePath();
         java.nio.file.Files.createDirectories(uploads);
@@ -133,5 +139,15 @@ public class ProductServiceImpl implements ProductService {
         Product updated = productRepository.save(product);
         logger.info("Image uploaded successfully for product ID: {}", productId);
         return productMapper.toResponse(updated);
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public ProductResponse getProductById(Long id) {
+        Long productId = Objects.requireNonNull(id, "Product id is required");
+        logger.info("Fetching product ID: {}", productId);
+        Product product = Objects.requireNonNull(productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID: " + productId)), "Product must not be null");
+        return productMapper.toResponse(product);
     }
 }
