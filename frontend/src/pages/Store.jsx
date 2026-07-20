@@ -9,6 +9,7 @@ import { filters, singleFilter, sortOptions } from "../data/FilterData"
 import { FormControl, FormControlLabel, FormLabel, Radio, RadioGroup } from "@mui/material"
 import { applyProductFilter, setProductItems } from "../features/product/productSlice"
 import { getAxiosInstance } from "../utility/axiosApiConfig"
+import SearchSuggestions from "../components/client/SearchSuggestions"
 
 function Store() {
   const axiosInstance = getAxiosInstance();
@@ -20,6 +21,7 @@ function Store() {
   const [selectedCategory, setSelectedCategory] = useState("All")
   const [meals, setMeals] = useState([])
   const [searchParams] = useSearchParams()
+  const [suggestionProducts, setSuggestionProducts] = useState([])
 
   const location = useLocation()
   const navigate = useNavigate()
@@ -54,9 +56,10 @@ function Store() {
 
   const handleSearch = async (e) => {
     e.preventDefault()
-    if (searchQuery.trim()) {
+    const trimmedQuery = searchQuery.trim()
+    if (trimmedQuery) {
       try {
-        const response = await axios.get(`https://www.themealdb.com/api/json/v1/1/search.php?s=${searchQuery}`)
+        const response = await axios.get(`https://www.themealdb.com/api/json/v1/1/search.php?s=${trimmedQuery}`)
         if (response.data.meals) {
           const formattedMeals = response.data.meals.map(meal => ({
             id: meal.idMeal,
@@ -67,6 +70,7 @@ function Store() {
             imageFilename: meal.strMealThumb
           }))
           setMeals(formattedMeals)
+          setSuggestionProducts(formattedMeals)
           dispatch(setProductItems(formattedMeals))
         } else {
           setMeals([])
@@ -96,6 +100,7 @@ function Store() {
           imageFilename: meal.strMealThumb
         }))
         setMeals(formattedMeals)
+        setSuggestionProducts(formattedMeals)
         dispatch(setProductItems(formattedMeals))
       }
     } catch (err) {
@@ -106,6 +111,20 @@ function Store() {
   useEffect(() => {
     fetchMeals()
   }, [])
+
+  const handleSuggestionSelect = (suggestion) => {
+    const trimmed = suggestion.replace(/^Search for “|”$/, "").trim()
+    setSearchQuery(trimmed)
+    const normalized = trimmed.toLowerCase()
+    const filteredResults = meals.filter((item) => {
+      const name = item.name?.toLowerCase() || ""
+      const category = item.category?.name?.toLowerCase() || ""
+      return name.includes(normalized) || category.includes(normalized)
+    })
+    setMeals(filteredResults)
+    setSuggestionProducts(filteredResults)
+    dispatch(setProductItems(filteredResults))
+  }
 
   useEffect(() => {
     const categoryFromUrl = searchParams.get('category')
@@ -175,13 +194,17 @@ function Store() {
         {/* Search Bar */}
         <div className="max-w-2xl mx-auto mb-8">
           <form onSubmit={handleSearch} className="flex items-center gap-2">
-            <input
-              type="text"
-              placeholder="Search for food items, beverages..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 px-6 py-3 border-2 border-orange-300 rounded-full focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-lg shadow-sm"
-            />
+            <div className="flex-1 rounded-full border-2 border-orange-300 bg-white px-4 py-3 shadow-sm focus-within:border-orange-500 focus-within:ring-2 focus-within:ring-orange-500">
+              <SearchSuggestions
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onSelect={handleSuggestionSelect}
+                placeholder="Search for food items, beverages..."
+                inputClassName="flex-1 px-2 py-1 text-lg text-gray-700"
+                wrapperClassName="w-full"
+                products={suggestionProducts}
+              />
+            </div>
             <button
               type="submit"
               className="px-8 py-3 bg-orange-600 text-white rounded-full hover:bg-orange-700 transition font-semibold shadow-md hover:shadow-lg"

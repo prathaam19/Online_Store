@@ -12,6 +12,7 @@ import {
   setTotalItem,
 } from "../../features/cart/cartSlice";
 import { setSearchProduct } from "../../features/product/productSlice";
+import SearchSuggestions from "../../components/client/SearchSuggestions";
 
 function Navbar() {
   const { token, user } = useSelector((state) => state.auth);
@@ -21,6 +22,7 @@ function Navbar() {
   const navigate = useNavigate();
   const [state, setState] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [suggestionProducts, setSuggestionProducts] = useState([]);
 
   const navigation = [
     { title: "Home", path: "/" },
@@ -52,11 +54,18 @@ function Navbar() {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/store?search=${searchQuery}`);
+    const trimmedQuery = searchQuery.trim();
+    if (trimmedQuery) {
+      navigate(`/store?search=${trimmedQuery}`);
     } else {
       navigate("/store");
     }
+  };
+
+  const handleSuggestionSelect = (suggestion) => {
+    const trimmed = suggestion.replace(/^Search for “|”$/, "").trim();
+    setSearchQuery(trimmed);
+    navigate(`/store?search=${encodeURIComponent(trimmed)}`);
   };
 
   return (
@@ -142,12 +151,14 @@ function Navbar() {
                     d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                   />
                 </svg>
-                <input
-                  type="text"
-                  placeholder="Search"
+                <SearchSuggestions
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-[24rem] px-2 py-2 text-gray-500 bg-transparent rounded-md outline-none"
+                  onSelect={handleSuggestionSelect}
+                  placeholder="Search"
+                  inputClassName="w-[24rem] px-2 py-2 text-gray-500 bg-transparent rounded-md outline-none"
+                  wrapperClassName="w-full"
+                  products={suggestionProducts}
                 />
               </div>
             </form>
